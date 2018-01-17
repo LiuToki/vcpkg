@@ -25,3 +25,7 @@ Description: vtk support for opencv
 Feature: gdcm
 Build-Depends: gdcm2
 Description: GDCM support for opencv
+
+Feature: tesseract
+Build-Depends: tesseract
+Description: Tesseract-ocr support for opencv

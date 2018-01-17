@@ -68,6 +68,28 @@ if(VCPKG_CMAKE_SYSTEM_NAME STREQUAL "WindowsStore")
   set(WITH_MSMF OFF)
 endif()
 
+set(TESSERACT_OPTIONS)
+if("tesseract" IN_LIST FEATURES)
+  list(APPEND TESSERACT_OPTIONS
+    -DTesseract_INCLUDE_DIR=${CURRENT_INSTALLED_DIR}/include
+    -DTesseract_LIBRARY=${CURRENT_INSTALLED_DIR}/lib
+    -DLept_LIBRARY=${CURRENT_INSTALLED_DIR}/lib
+  )
+
+  set(TESSERACT_INCLUDE_DIRECTORIES ${CURRENT_INSTALLED_DIR}/include)
+  set(TESSERACT_LIB_DIRECTORIES ${CURRENT_INSTALLED_DIR}/lib)
+  set(TESSERACT_BIN_DIRECTORIES ${CURRENT_INSTALLED_DIR}/bin)
+
+  # remove if CMakeLists.txt in contrib text modules
+  set(TESSERACT_CMAKELIST_PATH "${CONTRIB_SOURCE_PATH}/modules/text/CMakeLists.txt")
+  if(EXISTS ${TESSERACT_CMAKELIST_PATH})
+    file(REMOVE ${TESSERACT_CMAKELIST_PATH})
+  endif()
+
+  # create New CMakeLists.txt for tesseract
+  configure_file(${CMAKE_CURRENT_LIST_DIR}/CMakeLists_Tesseract_Template.txt.in ${TESSERACT_CMAKELIST_PATH} @ONLY)
+endif()
+
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
     OPTIONS
@@ -107,6 +129,8 @@ vcpkg_configure_cmake(
         "-DOPENCV_DOWNLOAD_PATH=${DOWNLOADS}/opencv-cache"
         -DOPENCV_EXTRA_MODULES_PATH=${CONTRIB_SOURCE_PATH}/modules
         -DOPENCV_OTHER_INSTALL_PATH=share/opencv
+        # TESSERACT
+        ${TESSERACT_OPTIONS}
         # WITH
         -DWITH_CUBLAS=OFF
         -DWITH_CUDA=${WITH_CUDA}
