@@ -4,16 +4,23 @@ ocv_define_module(text opencv_ml opencv_imgproc opencv_core opencv_features2d op
 if(NOT CMAKE_CROSSCOMPILING OR OPENCV_FIND_TESSERACT)
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
     find_package(Tesseract QUIET)
-    add_definitions( -DWINDOWS)
-    add_definitions( -DNOMINMAX)
-
-    include_directories(
-        @TESSERACT_INCLUDE_DIRECTORIES@
-    )
-    link_directories(
-        @TESSERACT_LIB_DIRECTORIES@
-        @TESSERACT_BIN_DIRECTORIES@
-    )
+    if(Tesseract_FOUND)
+        message(STATUS "Tesseract:   YES")
+        set(HAVE_TESSERACT 1)
+        add_definitions(-DWINDOWS)
+        add_definitions(-DNOMINMAX)
+        ocv_include_directories(@TESSERACT_INCLUDE_DIRECTORIES@)
+        ocv_target_link_libraries(${the_module} WS2_32.LIB)
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            ocv_target_link_libraries(${the_module} @TESSERACT_LIBDFILE_PATH@)
+            ocv_target_link_libraries(${the_module} @LEPTONICA_LIBDFILE_PATH@)
+        else()
+            ocv_target_link_libraries(${the_module} @TESSERACT_LIBFILE_PATH@)
+            ocv_target_link_libraries(${the_module} @LEPTONICA_LIBFILE_PATH@)
+        endif()
+    else()
+        message(STATUS "Tesseract:   NO")
+    endif()
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/text_config.hpp.in
