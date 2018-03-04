@@ -15,15 +15,20 @@
 ##
 ## - 7Z
 ## - BISON
+## - DARK
 ## - FLEX
 ## - GASPREPROCESSOR
-## - PERL
-## - PYTHON2
-## - PYTHON3
+## - GPERF
 ## - JOM
 ## - MESON
 ## - NASM
 ## - NINJA
+## - PERL
+## - PYTHON2
+## - PYTHON3
+## - RUBY
+## - SCONS
+## - SWIG
 ## - YASM
 ##
 ## Note that msys2 has a dedicated helper function: [`vcpkg_acquire_msys`](vcpkg_acquire_msys.md).
@@ -156,6 +161,12 @@ function(vcpkg_find_acquire_program VAR)
     set(URL "https://sourceforge.net/projects/scons/files/scons-local-3.0.1.zip/download")
     set(ARCHIVE "scons-local-3.0.1.zip")
     set(HASH fe121b67b979a4e9580c7f62cfdbe0c243eba62a05b560d6d513ac7f35816d439b26d92fc2d7b7d7241c9ce2a49ea7949455a17587ef53c04a5f5125ac635727)
+  elseif(VAR MATCHES "SWIG")
+    set(PROGNAME swig)
+    set(PATHS ${DOWNLOADS}/tools/swig)
+    set(URL "https://sourceforge.net/projects/swig/files/swigwin/swigwin-3.0.12/swigwin-3.0.12.zip/download")
+    set(ARCHIVE "swigwin-3.0.12.zip")
+    set(HASH f47024e850e2a7eca97e2d67c6a3e88677a44678bf0bf9cc0cd4f784648d325645e05dee5b3d661caa24b9653054447d3b53eefe005a09ad6a82cdc286c3c22b)
   else()
     message(FATAL "unknown tool ${VAR} -- unable to acquire.")
   endif()
