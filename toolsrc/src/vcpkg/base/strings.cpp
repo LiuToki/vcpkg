@@ -7,10 +7,11 @@
 namespace vcpkg::Strings::details
 {
     // To disambiguate between two overloads
-    static const auto isspace = [](const char c) { return std::isspace(c); };
+    static bool IS_SPACE(const char c) { return std::isspace(c) != 0; };
 
     // Avoids C4244 warnings because of char<->int conversion that occur when using std::tolower()
     static char tolower_char(const char c) { return static_cast<char>(std::tolower(c)); }
+    static char toupper_char(const char c) { return static_cast<char>(std::toupper(c)); }
 
 #if defined(_WIN32)
     static _locale_t& c_locale()
@@ -74,6 +75,16 @@ namespace vcpkg::Strings
 #endif
     }
 
+    std::string escape_string(const CStringView& s, char char_to_escape, char escape_char)
+    {
+        std::string ret = s.c_str();
+        // Replace '\' with '\\' or '`' with '``'
+        ret = Strings::replace_all(std::move(ret), {escape_char}, {escape_char, escape_char});
+        // Replace '"' with '\"' or '`"'
+        ret = Strings::replace_all(std::move(ret), {char_to_escape}, {escape_char, char_to_escape});
+        return ret;
+    }
+
     std::string::const_iterator case_insensitive_ascii_find(const std::string& s, const std::string& pattern)
     {
         const std::string pattern_as_lower_case(ascii_to_lowercase(pattern));
@@ -98,11 +109,16 @@ namespace vcpkg::Strings
 #endif
     }
 
-    std::string ascii_to_lowercase(const std::string& input)
+    std::string ascii_to_lowercase(std::string s)
     {
-        std::string output(input);
-        std::transform(output.begin(), output.end(), output.begin(), &details::tolower_char);
-        return output;
+        std::transform(s.begin(), s.end(), s.begin(), &details::tolower_char);
+        return s;
+    }
+
+    std::string ascii_to_uppercase(std::string s)
+    {
+        std::transform(s.begin(), s.end(), s.begin(), &details::toupper_char);
+        return s;
     }
 
     bool case_insensitive_ascii_starts_with(const std::string& s, const std::string& pattern)
@@ -127,8 +143,8 @@ namespace vcpkg::Strings
 
     std::string trim(std::string&& s)
     {
-        s.erase(std::find_if_not(s.rbegin(), s.rend(), details::isspace).base(), s.end());
-        s.erase(s.begin(), std::find_if_not(s.begin(), s.end(), details::isspace));
+        s.erase(std::find_if_not(s.rbegin(), s.rend(), details::IS_SPACE).base(), s.end());
+        s.erase(s.begin(), std::find_if_not(s.begin(), s.end(), details::IS_SPACE));
         return std::move(s);
     }
 

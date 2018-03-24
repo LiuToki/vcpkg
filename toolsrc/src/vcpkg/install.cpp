@@ -69,7 +69,7 @@ namespace vcpkg::Install
                 continue;
             }
 
-            const std::string filename = file.filename().generic_string();
+            const std::string filename = file.filename().u8string();
             if (fs::is_regular_file(status) && (Strings::case_insensitive_ascii_equals(filename.c_str(), "CONTROL") ||
                                                 Strings::case_insensitive_ascii_equals(filename.c_str(), "BUILD_INFO")))
             {
@@ -80,44 +80,41 @@ namespace vcpkg::Install
             const std::string suffix = file.generic_u8string().substr(prefix_length + 1);
             const fs::path target = destination / suffix;
 
-            if (fs::is_directory(status))
+            switch (status.type())
             {
-                fs.create_directory(target, ec);
-                if (ec)
+                case fs::file_type::directory:
                 {
-                    System::println(System::Color::error, "failed: %s: %s", target.u8string(), ec.message());
+                    fs.create_directory(target, ec);
+                    if (ec)
+                    {
+                        System::println(System::Color::error, "failed: %s: %s", target.u8string(), ec.message());
+                    }
+
+                    // Trailing backslash for directories
+                    output.push_back(Strings::format(R"(%s/%s/)", destination_subdirectory, suffix));
+                    break;
                 }
-
-                // Trailing backslash for directories
-                output.push_back(Strings::format(R"(%s/%s/)", destination_subdirectory, suffix));
-                continue;
-            }
-
-            if (fs::is_regular_file(status))
-            {
-                if (fs.exists(target))
+                case fs::file_type::regular:
                 {
-                    System::println(System::Color::warning,
-                                    "File %s was already present and will be overwritten",
-                                    target.u8string(),
-                                    ec.message());
+                    if (fs.exists(target))
+                    {
+                        System::println(System::Color::warning,
+                                        "File %s was already present and will be overwritten",
+                                        target.u8string(),
+                                        ec.message());
+                    }
+                    fs.copy_file(file, target, fs::copy_options::overwrite_existing, ec);
+                    if (ec)
+                    {
+                        System::println(System::Color::error, "failed: %s: %s", target.u8string(), ec.message());
+                    }
+                    output.push_back(Strings::format(R"(%s/%s)", destination_subdirectory, suffix));
+                    break;
                 }
-                fs.copy_file(file, target, fs::copy_options::overwrite_existing, ec);
-                if (ec)
-                {
-                    System::println(System::Color::error, "failed: %s: %s", target.u8string(), ec.message());
-                }
-                output.push_back(Strings::format(R"(%s/%s)", destination_subdirectory, suffix));
-                continue;
+                default:
+                    System::println(System::Color::error, "failed: %s: cannot handle file type", file.u8string());
+                    break;
             }
-
-            if (!fs::status_known(status))
-            {
-                System::println(System::Color::error, "failed: %s: unknown status", file.u8string());
-                continue;
-            }
-
-            System::println(System::Color::error, "failed: %s: cannot handle file type", file.u8string());
         }
 
         std::sort(output.begin(), output.end());
@@ -309,8 +306,17 @@ namespace vcpkg::Install
             System::println("Building package %s... done", display_name_with_features);
 
             auto bcf = std::make_unique<BinaryControlFile>(
-                Paragraphs::try_load_cached_control_package(paths, action.spec).value_or_exit(VCPKG_LINE_INFO));
+                Paragraphs::try_load_cached_package(paths, action.spec).value_or_exit(VCPKG_LINE_INFO));
             auto code = aux_install(display_name_with_features, *bcf);
+
+            if (action.build_options.clean_packages == Build::CleanPackages::YES)
+            {
+                auto& fs = paths.get_filesystem();
+                const fs::path package_dir = paths.package_dir(action.spec);
+                std::error_code ec;
+                fs.remove_all(package_dir, ec);
+            }
+
             return {code, std::move(bcf)};
         }
 
@@ -513,6 +519,11 @@ namespace vcpkg::Install
         }
     }
 
+    ///
+    /// <summary>
+    /// Run "install" command.
+    /// </summary>
+    ///
     void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, const Triplet& default_triplet)
     {
         // input sanitization
@@ -545,7 +556,7 @@ namespace vcpkg::Install
             Util::Enum::to_enum<Build::UseHeadVersion>(use_head_version),
             Util::Enum::to_enum<Build::AllowDownloads>(!no_downloads),
             Build::CleanBuildtrees::NO,
-        };
+            Build::CleanPackages::NO};
 
         // Note: action_plan will hold raw pointers to SourceControlFiles from this map
         std::vector<AnyAction> action_plan;
@@ -657,39 +668,42 @@ namespace vcpkg::Install
         return nullptr;
     }
 
+    std::string InstallSummary::xunit_result(const PackageSpec& spec, Chrono::ElapsedTime time, BuildResult code)
+    {
+        std::string inner_block;
+        const char* result_string = "";
+        switch (code)
+        {
+            case BuildResult::POST_BUILD_CHECKS_FAILED:
+            case BuildResult::FILE_CONFLICTS:
+            case BuildResult::BUILD_FAILED:
+                result_string = "Fail";
+                inner_block = Strings::format("<failure><message><![CDATA[%s]]></message></failure>", to_string(code));
+                break;
+            case BuildResult::EXCLUDED:
+            case BuildResult::CASCADED_DUE_TO_MISSING_DEPENDENCIES:
+                result_string = "Skip";
+                inner_block = Strings::format("<reason><![CDATA[%s]]></reason>", to_string(code));
+                break;
+            case BuildResult::SUCCEEDED: result_string = "Pass"; break;
+            default: Checks::exit_fail(VCPKG_LINE_INFO);
+        }
+
+        return Strings::format(R"(<test name="%s" method="%s" time="%lld" result="%s">%s</test>)"
+                               "\n",
+                               spec,
+                               spec,
+                               time.as<std::chrono::seconds>().count(),
+                               result_string,
+                               inner_block);
+    }
+
     std::string InstallSummary::xunit_results() const
     {
         std::string xunit_doc;
         for (auto&& result : results)
         {
-            std::string inner_block;
-            const char* result_string = "";
-            switch (result.build_result.code)
-            {
-                case BuildResult::POST_BUILD_CHECKS_FAILED:
-                case BuildResult::FILE_CONFLICTS:
-                case BuildResult::BUILD_FAILED:
-                    result_string = "Fail";
-                    inner_block = Strings::format("<failure><message><![CDATA[%s]]></message></failure>",
-                                                  to_string(result.build_result.code));
-                    break;
-                case BuildResult::EXCLUDED:
-                case BuildResult::CASCADED_DUE_TO_MISSING_DEPENDENCIES:
-                    result_string = "Skip";
-                    inner_block =
-                        Strings::format("<reason><![CDATA[%s]]></reason>", to_string(result.build_result.code));
-                    break;
-                case BuildResult::SUCCEEDED: result_string = "Pass"; break;
-                default: Checks::exit_fail(VCPKG_LINE_INFO);
-            }
-
-            xunit_doc += Strings::format(R"(<test name="%s" method="%s" time="%lld" result="%s">%s</test>)"
-                                         "\n",
-                                         result.spec,
-                                         result.spec,
-                                         result.timing.as<std::chrono::seconds>().count(),
-                                         result_string,
-                                         inner_block);
+            xunit_doc += xunit_result(result.spec, result.timing, result.build_result.code);
         }
         return xunit_doc;
     }

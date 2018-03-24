@@ -33,7 +33,7 @@ namespace vcpkg
 
     struct VcpkgPaths
     {
-        static Expected<VcpkgPaths> create(const fs::path& vcpkg_root_dir);
+        static Expected<VcpkgPaths> create(const fs::path& vcpkg_root_dir, const std::string& default_vs_path);
 
         fs::path package_dir(const PackageSpec& spec) const;
         fs::path port_dir(const PackageSpec& spec) const;
@@ -63,6 +63,7 @@ namespace vcpkg
 
         fs::path ports_cmake;
 
+        const fs::path& get_7za_exe() const;
         const fs::path& get_cmake_exe() const;
         const fs::path& get_git_exe() const;
         const fs::path& get_nuget_exe() const;
@@ -80,6 +81,7 @@ namespace vcpkg
 
     private:
         Lazy<std::vector<std::string>> available_triplets;
+        Lazy<fs::path> _7za_exe;
         Lazy<fs::path> cmake_exe;
         Lazy<fs::path> git_exe;
         Lazy<fs::path> nuget_exe;
@@ -88,5 +90,7 @@ namespace vcpkg
         Lazy<fs::path> ifw_repogen_exe;
         Lazy<std::vector<Toolset>> toolsets;
         Lazy<std::vector<Toolset>> toolsets_vs2013;
+
+        fs::path default_vs_path;
     };
 }

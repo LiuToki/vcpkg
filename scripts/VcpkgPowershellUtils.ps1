@@ -3,6 +3,16 @@ function vcpkgHasModule([Parameter(Mandatory=$true)][string]$moduleName)
     return [bool](Get-Module -ListAvailable -Name $moduleName)
 }
 
+function vcpkgHasProperty([Parameter(Mandatory=$true)][AllowNull()]$object, [Parameter(Mandatory=$true)]$propertyName)
+{
+    if ($object -eq $null)
+    {
+        return $false
+    }
+
+    return [bool]($object.psobject.Properties | where { $_.Name -eq "$propertyName"})
+}
+
 function vcpkgCreateDirectoryIfNotExists([Parameter(Mandatory=$true)][string]$dirPath)
 {
     if (!(Test-Path $dirPath))
@@ -25,16 +35,29 @@ function vcpkgCreateParentDirectoryIfNotExists([Parameter(Mandatory=$true)][stri
     }
 }
 
-function vcpkgRemoveItem([Parameter(Mandatory=$true)][string]$dirPath)
+function vcpkgIsDirectory([Parameter(Mandatory=$true)][string]$path)
 {
-    if ([string]::IsNullOrEmpty($dirPath))
+    return (Get-Item $path) -is [System.IO.DirectoryInfo]
+}
+
+function vcpkgRemoveItem([Parameter(Mandatory=$true)][string]$path)
+{
+    if ([string]::IsNullOrEmpty($path))
     {
         return
     }
 
-    if (Test-Path $dirPath)
+    if (Test-Path $path)
     {
-        Remove-Item $dirPath -Recurse -Force
+        # Remove-Item -Recurse occasionally fails. This is a workaround
+        if (vcpkgIsDirectory $path)
+        {
+            & cmd.exe /c rd /s /q $path
+        }
+        else
+        {
+            Remove-Item $path -Force
+        }
     }
 }
 
@@ -107,10 +130,26 @@ function vcpkgDownloadFile( [Parameter(Mandatory=$true)][string]$url,
         return
     }
 
+    if ($url -match "github")
+    {
+        if ([System.Enum]::IsDefined([Net.SecurityProtocolType], "Tls12"))
+        {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        }
+        else
+        {
+            Write-Warning "Github has dropped support for TLS versions prior to 1.2, which is not available on your system"
+            Write-Warning "Please manually download $url to $downloadPath"
+            Write-Warning "To solve this issue for future downloads, you can also install Windows Management Framework 5.1+"
+            throw "Download failed"
+        }
+    }
+
     vcpkgCreateParentDirectoryIfNotExists $downloadPath
 
     $downloadPartPath = "$downloadPath.part"
     vcpkgRemoveItem $downloadPartPath
+
 
     $wc = New-Object System.Net.WebClient
     if (!$wc.Proxy.IsBypassed($url))
@@ -134,10 +173,6 @@ function vcpkgExtractFile(  [Parameter(Mandatory=$true)][string]$file,
     vcpkgRemoveItem $destinationPartial
     vcpkgCreateDirectoryIfNotExists $destinationPartial
 
-    $shell = new-object -com shell.application
-    $zip = $shell.NameSpace($file)
-    $itemCount = $zip.Items().Count
-
     if (vcpkgHasCommand -commandName 'Microsoft.PowerShell.Archive\Expand-Archive')
     {
         Write-Verbose("Extracting with Microsoft.PowerShell.Archive\Expand-Archive")
@@ -151,12 +186,16 @@ function vcpkgExtractFile(  [Parameter(Mandatory=$true)][string]$file,
     else
     {
         Write-Verbose("Extracting via shell")
+        $shell = new-object -com shell.application
+        $zip = $shell.NameSpace($(Get-Item $file).fullname)
         foreach($item in $zip.items())
         {
             # Piping to Out-Null is used to block until finished
             $shell.Namespace($destinationPartial).copyhere($item) | Out-Null
         }
     }
+
+    $itemCount = @(Get-ChildItem "$destinationPartial").Count
 
     if ($itemCount -eq 1)
     {
