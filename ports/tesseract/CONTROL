@@ -1,11 +1,4 @@
-<<<<<<< HEAD
-Source: tesseract
-Version: 3.05.01-2
-Description: An OCR Engine that was developed at HP Labs between 1985 and 1995... and now at Google.
-Build-Depends: leptonica, icu
-=======
 Source: tesseract
 Version: 3.05.01-3
 Description: An OCR Engine that was developed at HP Labs between 1985 and 1995... and now at Google.
 Build-Depends: leptonica, icu
->>>>>>> upstream/master

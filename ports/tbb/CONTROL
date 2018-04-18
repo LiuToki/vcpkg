@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-Source: tbb
-Version: 2018_U2
-Description: Intel's Threading Building Blocks.
-=======
 Source: tbb
 Version: 2018_U3
 Description: Intel's Threading Building Blocks.
->>>>>>> upstream/master
