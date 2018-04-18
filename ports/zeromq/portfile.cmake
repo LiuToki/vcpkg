@@ -3,8 +3,8 @@ include(vcpkg_common_functions)
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO zeromq/libzmq
-    REF 15b3dccf47179a88311c84d6ef250565abd05182
-    SHA512 568d315f48c194f7db3df59ecf70a6625e916a4c258a3f5ad1d7b9e5899afd6a7d825f4fb8811cb49dcd752142952a9bd6e4c31af6572373462a4821d6a1a2bd
+    REF bb4fb32925c6465fd0f8e8cc89e5347bc79bc4bf
+    SHA512 73101b68d93fdf1eca1f83373fe4c946865978d32ca11692e9015a63af8d42ff2d2ff93c88c812f75c2d80596c986df59e62f8de3dc1a016ab24f91f518c24eb
     HEAD_REF master
 )
 
@@ -45,6 +45,8 @@ if(VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
 else()
     string(REPLACE "get_target_property(ZeroMQ_LIBRARY libzmq LOCATION)" "add_library(libzmq INTERFACE IMPORTED)\nset_target_properties(libzmq PROPERTIES INTERFACE_LINK_LIBRARIES libzmq-static)" _contents "${_contents}")
     set(_contents "${_contents}\nset(ZeroMQ_LIBRARY \${ZeroMQ_STATIC_LIBRARY})\n")
+
+    file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/bin ${CURRENT_PACKAGES_DIR}/debug/bin)
 endif()
 file(WRITE ${CURRENT_PACKAGES_DIR}/share/zeromq/ZeroMQConfig.cmake "${_contents}")
 

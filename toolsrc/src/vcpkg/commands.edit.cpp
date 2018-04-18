@@ -9,14 +9,15 @@ namespace vcpkg::Commands::Edit
 {
     static std::vector<fs::path> find_from_registry()
     {
+        std::vector<fs::path> output;
+
+#if defined(_WIN32)
         static const std::array<const char*, 3> REGKEYS = {
             R"(SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{C26E74D1-022E-4238-8B9D-1E7564A36CC9}_is1)",
             R"(SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1287CAD5-7C8D-410D-88B9-0D1EE4A83FF2}_is1)",
             R"(SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{F8A2A208-72B3-4D61-95FC-8A65D340689B}_is1)",
         };
 
-        std::vector<fs::path> output;
-#if defined(_WIN32)
         for (auto&& keypath : REGKEYS)
         {
             const Optional<std::string> code_installpath =
@@ -34,6 +35,8 @@ namespace vcpkg::Commands::Edit
 
     static constexpr StringLiteral OPTION_BUILDTREES = "--buildtrees";
 
+    static constexpr StringLiteral OPTION_ALL = "--all";
+
     static std::vector<std::string> valid_arguments(const VcpkgPaths& paths)
     {
         auto sources_and_errors = Paragraphs::try_load_all_ports(paths.get_filesystem(), paths.ports);
@@ -42,9 +45,9 @@ namespace vcpkg::Commands::Edit
                           [](auto&& pgh) -> std::string { return pgh->core_paragraph->name; });
     }
 
-    static constexpr std::array<CommandSwitch, 1> EDIT_SWITCHES = {{
-        {OPTION_BUILDTREES, "Open editor into the port-specific buildtree subfolder"},
-    }};
+    static constexpr std::array<CommandSwitch, 2> EDIT_SWITCHES = {
+        {{OPTION_BUILDTREES, "Open editor into the port-specific buildtree subfolder"},
+         {OPTION_ALL, "Open editor into the port as well as the port-specific buildtree subfolder"}}};
 
     const CommandStructure COMMAND_STRUCTURE = {
         Help::create_example_string("edit zlib"),
@@ -91,7 +94,7 @@ namespace vcpkg::Commands::Edit
         const std::vector<fs::path> from_registry = find_from_registry();
         candidate_paths.insert(candidate_paths.end(), from_registry.cbegin(), from_registry.cend());
 
-        auto it = Util::find_if(candidate_paths, [&](const fs::path& p) { return fs.exists(p); });
+        const auto it = Util::find_if(candidate_paths, [&](const fs::path& p) { return fs.exists(p); });
         if (it == candidate_paths.cend())
         {
             System::println(
@@ -110,6 +113,15 @@ namespace vcpkg::Commands::Edit
 
             const auto cmd_line =
                 Strings::format(R"("%s" "%s" -n)", env_editor.u8string(), buildtrees_current_dir.u8string());
+            Checks::exit_with_code(VCPKG_LINE_INFO, System::cmd_execute(cmd_line));
+        }
+
+        if (Util::Sets::contains(options.switches, OPTION_ALL))
+        {
+            const auto buildtrees_current_dir = paths.buildtrees / port_name;
+
+            const auto cmd_line = Strings::format(
+                R"("%s" "%s" "%s" -n)", env_editor.u8string(), portpath.u8string(), buildtrees_current_dir.u8string());
             Checks::exit_with_code(VCPKG_LINE_INFO, System::cmd_execute(cmd_line));
         }
 

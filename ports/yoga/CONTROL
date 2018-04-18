@@ -1,3 +1,9 @@
+<<<<<<< HEAD
 Source: yoga
 Version: 1.7.0
 Description: Yoga is a cross-platform layout engine which implements Flexbox
+=======
+Source: yoga
+Version: 1.8.0-1
+Description: Yoga is a cross-platform layout engine which implements Flexbox
+>>>>>>> upstream/master

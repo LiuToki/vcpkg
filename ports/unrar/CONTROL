@@ -1,3 +1,9 @@
+<<<<<<< HEAD
 Source: unrar
 Version: 5.5.8
 Description: rarlab's unrar libary
+=======
+Source: unrar
+Version: 5.5.8-1
+Description: rarlab's unrar libary
+>>>>>>> upstream/master
