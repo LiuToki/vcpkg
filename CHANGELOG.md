@@ -1,3 +1,164 @@
+vcpkg (0.0.111)
+--------------
+  * Add ports:
+    - cmark          0.28.3-1
+    - inja           1.0.0
+    - libgo          2.7
+    - range-v3-vs2015 20151130-vcpkg5
+    - restinio       0.4.5.1
+    - treehopper     1.11.3-1
+    - yajl           2.1.0-1
+    - yato           1.0-1
+  * Update ports:
+    - abseil         2018-04-12 -> 2018-04-25-1
+    - alembic        1.7.7 -> 1.7.8
+    - aws-sdk-cpp    1.4.33 -> 1.4.38
+    - bigint         2010.04.30-1 -> 2010.04.30-2
+    - box2d          2.3.1-374664b -> 2.3.1-374664b-1
+    - brotli         1.0.2-1 -> 1.0.2-2
+    - cgal           4.11.1 -> 4.12
+    - corrade        2018.02-1 -> 2018.04-1
+    - directxmesh    feb2018-eb751e0b631b05aa25c36c08e7d6bbf09f5e94a9 -> apr2018
+    - directxtex     feb2018b -> apr2018
+    - directxtk      feb2018 -> apr2018
+    - discord-rpc    3.2.0 -> 3.3.0
+    - exiv2          2018-04-12 -> 2018-04-25
+    - exprtk         2018.01.01-f32d2b4 -> 2018.04.30-46877b6
+    - folly          2018.04.16.00 -> 2018.04.23.00
+    - freeglut       3.0.0-3 -> 3.0.0-4
+    - gainput        1.0.0 -> 1.0.0-1
+    - geos           3.6.2-2 -> 3.6.2-3
+    - http-parser    2.7.1-2 -> 2.7.1-3
+    - imgui          1.53 -> 1.60
+    - ismrmrd        1.3.2-1 -> 1.3.2-2
+    - jsonnet        2018-04-17 -> 2018-04-25
+    - leveldb        2017-10-25-8b1cd3753b184341e837b30383832645135d3d73-1 -> 2017-10-25-8b1cd3753b184341e837b30383832645135d3d73-2
+    - libflac        1.3.2-4 -> 1.3.2-5
+    - libqrencode    4.0.0-1 -> 4.0.0-2
+    - libuv          1.20.0 -> 1.20.2
+    - libxmlpp       2.40.1-1 -> 2.40.1-2
+    - llvm           6.0.0 -> 6.0.0-1
+    - magnum         2018.02-2 -> 2018.04-1
+    - magnum-extras  2018.02-2 -> 2018.04-1
+    - magnum-integration 2018.02-1 -> 2018.04-1
+    - magnum-plugins 2018.02-2 -> 2018.04-1
+    - ms-gsl         2018-03-17 -> 2018-04-25
+    - nuklear        2018-04-17 -> 2018-04-25
+    - openal-soft    1.18.2-1 -> 1.18.2-2
+    - physfs         2.0.3-2 -> 3.0.1
+    - poco           1.8.1-1 -> 1.9.0
+    - python3        3.6.4 -> 3.6.4-1
+    - quirc          1.0-1 -> 1.0-2
+    - range-v3       20151130-vcpkg5 -> 0.3.5
+    - rapidjson      1.1.0 -> 1.1.0-1
+    - realsense2     2.10.1-1 -> 2.10.4
+    - rhash          1.3.5-1 -> 1.3.6
+    - rocksdb        5.12.2 -> 5.12.4
+    - rs-core-lib    2018-04-12 -> 2018-04-25
+    - sciter         4.1.5 -> 4.1.7
+    - sfml           2.4.2-2 -> 2.4.2-3
+    - sobjectizer    5.5.21 -> 5.5.22
+    - sol            2.19.5 -> 2.20.0
+    - sqlite3        3.23.0 -> 3.23.1-1
+    - strtk          2018.01.01-5579ed1 -> 2018.05.07-48c9554
+    - thrift         2018-04-17 -> 2018-04-25
+    - unicorn        2018-03-20 -> 2018-04-25
+    - uwebsockets    0.14.7-1 -> 0.14.8-1
+    - vlpp           0.9.3.1 -> 0.9.3.1-1
+    - zeromq         2018-04-17 -> 2018-04-25
+    - zstd           1.3.3 -> 1.3.4
+  * Add clean patching for vcpkg_from_github()
+    - `vcpkg_from_github()` now takes a PATCHES argument (see the azure-storage-cpp [portfile](ports\azure-storage-cpp\portfile.cmake) as an example)
+    - A unique directory name is derived from the source hash and the patch hashes
+    - Modifying the patches would previously cause the new patches to fail to apply if sources with a previous version of the patches were present in the buildtrees. This is no longer the case.
+  * Fix various cross-platform issues
+
+-- vcpkg team <vcpkg@microsoft.com>  FRI, 11 May 2018 21:45:00 -0800
+
+
+vcpkg (0.0.110)
+--------------
+  * `vcpkg` is now available for Linux and MacOS. More information [here](https://blogs.msdn.microsoft.com/vcblog/2018/04/24/announcing-a-single-c-library-manager-for-linux-macos-and-windows-vcpkg/).
+
+-- vcpkg team <vcpkg@microsoft.com>  TUE, 24 Apr 2018 10:30:00 -0800
+
+
+vcpkg (0.0.109)
+--------------
+  * Add ports:
+    - boost-container-hash 1.67.0
+    - boost-contract 1.67.0
+    - boost-hof      1.67.0
+    - fastrtps       1.5.0
+    - fluidsynth     1.1.10
+    - liblinear      2.20
+    - libxmlpp       2.40.1-1
+    - utf8h          841cb2deb8eb806e73fff0e1f43a11fca4f5da45
+    - vxl            20180414-7a130cf-1
+  * Update ports:
+    - abseil         2018-04-05 -> 2018-04-12
+    - aws-sdk-cpp    1.4.30-1 -> 1.4.33
+    - azure-c-shared-utility 1.1.2 -> 1.1.3
+    - azure-iot-sdk-c 1.2.2 -> 1.2.3
+    - azure-uamqp-c  1.2.2 -> 1.2.3
+    - azure-umqtt-c  1.1.2 -> 1.1.3
+    - benchmark      1.3.0-1 -> 1.4.0
+    - boost          1.66.0 -> 1.67.0
+    - boost-*        1.66.0 -> 1.67.0
+    - breakpad       2018-04-05 -> 2018-04-17
+    - cartographer   0.3.0-3 -> 0.3.0-4
+    - catch2         2.2.1-1 -> 2.2.2
+    - celero         2.1.0-1 -> 2.1.0-2
+    - chakracore     1.8.2 -> 1.8.3
+    - cimg           221 -> 2.2.2
+    - cppzmq         4.2.2 -> 4.2.2-1
+    - date           2.4 -> 2.4.1
+    - directxmesh    feb2018 -> feb2018-eb751e0b631b05aa25c36c08e7d6bbf09f5e94a9
+    - exiv2          2018-04-05 -> 2018-04-12
+    - folly          2018.03.19.00-2 -> 2018.04.16.00
+    - forest         7.0.1 -> 7.0.6
+    - gettext        0.19-2 -> 0.19-4
+    - glib           2.52.3-2 -> 2.52.3-9
+    - glibmm         2.52.1 -> 2.52.1-7
+    - graphicsmagick 1.3.26-2 -> 1.3.28
+    - grpc           1.10.1 -> 1.10.1-1
+    - icu            59.1-1 -> 61.1-1
+    - jsonnet        2018-03-17 -> 2018-04-17
+    - libiconv       1.15-3 -> 1.15-4
+    - libsigcpp      2.10 -> 2.10-1
+    - libtorrent     1.1.6 -> 1.1.6-1
+    - libuuid        1.0.3 -> 1.0.3-1
+    - libzip         rel-1-5-0 -> rel-1-5-1
+    - llvm           5.0.1 -> 6.0.0
+    - magnum         2018.02-1 -> 2018.02-2
+    - magnum-plugins 2018.02-1 -> 2018.02-2
+    - nuklear        2018-04-05 -> 2018-04-17
+    - openssl        1.0.2o-1 -> 1.0.2o-2
+    - openvr         1.0.13 -> 1.0.14
+    - parson         2018-03-23 -> 2018-04-17
+    - protobuf       3.5.1-1 -> 3.5.1-3
+    - pugixml        1.8.1-3 -> 1.9-1
+    - realsense2     2.10.1 -> 2.10.1-1
+    - rs-core-lib    2018-04-05 -> 2018-04-12
+    - sol            2.18.7 -> 2.19.5
+    - sqlite3        3.21.0-1 -> 3.23.0
+    - thrift         2018-04-05 -> 2018-04-17
+    - tinyxml2       6.0.0-2 -> 6.2.0
+    - unicorn-lib    2018-03-13 -> 2018-04-09
+    - uwebsockets    0.14.6-1 -> 0.14.7-1
+    - wt             4.0.2 -> 4.0.3
+    - x264           152-e9a5903edf8ca59 -> 152-e9a5903edf8ca59-1
+    - yoga           1.7.0-1 -> 1.8.0-1
+    - zeromq         2018-04-05 -> 2018-04-17
+  * Bump required version & auto-downloaded version of `nuget` to 4.6.2
+  * Bump required version & auto-downloaded version of `vswhere` to 2.4.1
+  * `vcpkg edit` improvements
+    - '--all' now will open both the buildtrees dir and the package dir
+    - Allow multiple ports to be specified as arguments
+
+-- vcpkg team <vcpkg@microsoft.com>  MON, 23 Apr 2018 19:00:00 -0800
+
+
 vcpkg (0.0.108)
 --------------
   * Add ports:
