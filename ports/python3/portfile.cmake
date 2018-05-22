@@ -58,6 +58,13 @@ endif()
 vcpkg_build_msbuild(
     PROJECT_PATH ${SOURCE_PATH}/PCBuild/pythoncore.vcxproj
     PLATFORM ${BUILD_ARCH})
+if (VCPKG_LIBRARY_LINKAGE STREQUAL static)
+    message(STATUS "Warning: If you need python binary, Build non static version.")
+else()
+    vcpkg_build_msbuild(
+        PROJECT_PATH ${SOURCE_PATH}/PCBuild/python.vcxproj
+        PLATFORM ${BUILD_ARCH})
+endif()
 
 if (VCPKG_LIBRARY_LINKAGE STREQUAL static)
     vcpkg_apply_patches(
@@ -77,6 +84,9 @@ file(COPY ${SOURCE_PATH}/PCBuild/${OUT_DIR}/python${PYTHON_VERSION_MAJOR}${PYTHO
 if (VCPKG_LIBRARY_LINKAGE STREQUAL dynamic)
     file(COPY ${SOURCE_PATH}/PCBuild/${OUT_DIR}/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}.dll DESTINATION ${CURRENT_PACKAGES_DIR}/bin)
     file(COPY ${SOURCE_PATH}/PCBuild/${OUT_DIR}/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}_d.dll DESTINATION ${CURRENT_PACKAGES_DIR}/debug/bin)
+
+    file(COPY ${SOURCE_PATH}/PCBuild/${OUT_DIR}/python.exe DESTINATION ${CURRENT_PACKAGES_DIR}/tools/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
+    file(COPY ${SOURCE_PATH}/PCBuild/${OUT_DIR}/python_d.exe DESTINATION ${CURRENT_PACKAGES_DIR}/tools/python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR})
 endif()
 
 # Handle copyright
