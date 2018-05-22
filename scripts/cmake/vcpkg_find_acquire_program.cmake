@@ -15,15 +15,20 @@
 ##
 ## - 7Z
 ## - BISON
+## - DARK
 ## - FLEX
 ## - GASPREPROCESSOR
-## - PERL
-## - PYTHON2
-## - PYTHON3
+## - GPERF
 ## - JOM
 ## - MESON
 ## - NASM
 ## - NINJA
+## - PERL
+## - PYTHON2
+## - PYTHON3
+## - RUBY
+## - SCONS
+## - SWIG
 ## - YASM
 ## - ARIA2 (Downloader)
 ##
@@ -175,19 +180,13 @@ function(vcpkg_find_acquire_program VAR)
     set(URL "https://sourceforge.net/projects/scons/files/scons-local-3.0.1.zip/download")
     set(ARCHIVE "scons-local-3.0.1.zip")
     set(HASH fe121b67b979a4e9580c7f62cfdbe0c243eba62a05b560d6d513ac7f35816d439b26d92fc2d7b7d7241c9ce2a49ea7949455a17587ef53c04a5f5125ac635727)
-  elseif(VAR MATCHES "DOXYGEN")
-    set(PROGNAME doxygen)
-    set(PATHS ${DOWNLOADS}/tools/doxygen)
-    set(URL "http://ftp.stack.nl/pub/users/dimitri/doxygen-1.8.14.windows.bin.zip")
-    set(ARCHIVE "doxygen-1.8.14.windows.bin.zip")
-    set(HASH d0d706501e7112045b1f401f22d12a2c8d9b7728edee9ad1975a17dff914c16494ae48a70beab6f6304643779935843f268c7afed3b9da7d403b5cb11cac0c50)
-  # Download Tools
-  elseif(VAR MATCHES "ARIA2")
-    set(PROGNAME aria2c)
-    set(PATHS ${DOWNLOADS}/tools/aria2c/aria2-1.33.1-win-32bit-build1)
-    set(URL "https://github.com/aria2/aria2/releases/download/release-1.33.1/aria2-1.33.1-win-32bit-build1.zip")
-    set(ARCHIVE "aria2-1.33.1-win-32bit-build1.zip")
-    set(HASH 2456176ba3d506a07cf0cc4f61f080e1ff8cb4106426d66f354c5bb67a9a8720b5ddb26904275e61b1f623c932355f7dcde4cd17556cc895f11293c23c3a9bf3)
+  elseif(VAR MATCHES "SWIG")
+    set(PROGNAME swig)
+    set(SUBDIR "swigwin-3.0.12")
+    set(PATHS ${DOWNLOADS}/tools/swig/${SUBDIR})
+    set(URL "https://sourceforge.net/projects/swig/files/swigwin/swigwin-3.0.12/swigwin-3.0.12.zip/download")
+    set(ARCHIVE "swigwin-3.0.12.zip")
+    set(HASH f47024e850e2a7eca97e2d67c6a3e88677a44678bf0bf9cc0cd4f784648d325645e05dee5b3d661caa24b9653054447d3b53eefe005a09ad6a82cdc286c3c22b)
   else()
     message(FATAL "unknown tool ${VAR} -- unable to acquire.")
   endif()
