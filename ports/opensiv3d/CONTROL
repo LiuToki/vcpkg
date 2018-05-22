@@ -1,4 +1,4 @@
-Source: siv3d
-Version: February 11, 2018
+Source: opensiv3d
+Version: May 8, 2018
 Description: OpenSiv3D is a C++14/17 framework for games and interactive media.
 Build-Depends: boost
