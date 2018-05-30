@@ -72,4 +72,5 @@ file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/si
 # Copy pdb
 vcpkg_copy_pdbs()
 
+message(STATUS "This package use extra library.\nYou should check the what library is in the ThirdParty directory.")
 message(STATUS "Installing done")
