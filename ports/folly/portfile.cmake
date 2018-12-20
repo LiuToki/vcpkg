@@ -12,16 +12,17 @@ include(vcpkg_common_functions)
 # Required to run build/generate_escape_tables.py et al.
 vcpkg_find_acquire_program(PYTHON3)
 get_filename_component(PYTHON3_DIR "${PYTHON3}" DIRECTORY)
-set(ENV{PATH} "$ENV{PATH};${PYTHON3_DIR}")
+vcpkg_add_to_path("${PYTHON3_DIR}")
 
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO facebook/folly
-    REF v2018.04.23.00
-    SHA512 7614f799fe12047070f2efe471ccbb6166dca62947d3fd5baa9a3cc50bab6238bda77ca61153779913903ad57346767b21cf59c025a0a93db39ad99e1258c45d
+    REF v2018.11.26.00
+    SHA512 7a404df7287c9a3278bc47205023881ade188a1d3ade35748ae9ae4f35485faedc9f8c0264cfd0f3565b2d5891235deda0f515946a2c313570ef41751a3693ac
     HEAD_REF master
     PATCHES
-        ${CMAKE_CURRENT_LIST_DIR}/find-gflags.patch
+        find-gflags.patch
+        no-werror.patch
 )
 
 file(COPY
@@ -65,6 +66,7 @@ vcpkg_configure_cmake(
         -DLIBAIO_FOUND=OFF
         -DLIBURCU_FOUND=OFF
         -DCMAKE_DISABLE_FIND_PACKAGE_LibURCU=ON
+        -DCMAKE_INSTALL_DIR=share/folly
         ${FEATURE_OPTIONS}
 )
 
@@ -72,7 +74,7 @@ vcpkg_install_cmake(ADD_BIN_TO_PATH)
 
 vcpkg_copy_pdbs()
 
-vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake/folly)
+vcpkg_fixup_cmake_targets(CONFIG_PATH share/folly)
 
 file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
 
