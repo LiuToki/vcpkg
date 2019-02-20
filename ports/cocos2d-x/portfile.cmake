@@ -18,8 +18,8 @@ vcpkg_find_acquire_program(PYTHON2)
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO cocos2d/cocos2d-x
-    REF cocos2d-x-3.17
-    SHA512 9635624fb289bd1203763f70d5492be19584a3037724c83230774ed68ff76acb1bf48cc162cf24b8374b162760084eae7f7bbb329adc33719fdc65d89a1906b0
+    REF cocos2d-x-3.17.1
+    SHA512 461f31dfb6ad194f618d12ede8671d57e7244ce7e39aac93bfaf9e6faf89fd5d4de7f5976e3fabfb93fbfc5b7bd4fd8ea255152eb9a01cd05b599c1a23acb4d8
     HEAD_REF master
 )
 
