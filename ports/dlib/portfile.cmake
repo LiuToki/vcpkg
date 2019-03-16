@@ -30,6 +30,12 @@ if("cuda" IN_LIST FEATURES)
   set(WITH_CUDA ON)
 endif()
 
+vcpkg_apply_patches(
+    SOURCE_PATH ${SOURCE_PATH}
+    PATCHES
+        ${CMAKE_CURRENT_LIST_DIR}/extend-image-format.patch
+)
+
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
     PREFER_NINJA 
@@ -75,6 +81,27 @@ file(READ ${CURRENT_PACKAGES_DIR}/include/dlib/config.h _contents)
 string(REPLACE "/* #undef ENABLE_ASSERTS */" "#if defined(_DEBUG)\n#define ENABLE_ASSERTS\n#endif" _contents ${_contents})
 string(REPLACE "#define DLIB_DISABLE_ASSERTS" "#if !defined(_DEBUG)\n#define DLIB_DISABLE_ASSERTS\n#endif" _contents ${_contents})
 file(WRITE ${CURRENT_PACKAGES_DIR}/include/dlib/config.h "${_contents}")
+
+# build imglab
+vcpkg_configure_cmake(
+    SOURCE_PATH ${SOURCE_PATH}/tools/imglab
+    PREFER_NINJA 
+)
+
+vcpkg_install_cmake()
+
+# Install tool
+file(MAKE_DIRECTORY ${CURRENT_PACKAGES_DIR}/tools/dlib)
+file(COPY ${CURRENT_PACKAGES_DIR}/bin/imglab.exe DESTINATION ${CURRENT_PACKAGES_DIR}/tools/dlib)
+vcpkg_copy_tool_dependencies(${CURRENT_PACKAGES_DIR}/tools/dlib)
+
+vcpkg_copy_pdbs()
+
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/include)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/bin)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/bin)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/lib/pkgconfig)
+file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig)
 
 # Handle copyright
 file(COPY ${SOURCE_PATH}/dlib/LICENSE.txt DESTINATION ${CURRENT_PACKAGES_DIR}/share/dlib)

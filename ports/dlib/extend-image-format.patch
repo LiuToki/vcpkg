@@ -1,0 +1,30 @@
+diff --git a/dlib/image_loader/jpeg_loader.h b/dlib/image_loader/jpeg_loader.h
+index 097a461..d91b6d2 100644
+--- a/dlib/image_loader/jpeg_loader.h
++++ b/dlib/image_loader/jpeg_loader.h
+@@ -3,6 +3,10 @@
+ #ifndef DLIB_JPEG_IMPORT
+ #define DLIB_JPEG_IMPORT
+ 
++#ifndef DLIB_JPEG_SUPPORT
++#define DLIB_JPEG_SUPPORT
++#endif
++
+ #include <vector>
+ 
+ #include "jpeg_loader_abstract.h"
+diff --git a/dlib/image_saver/save_png.h b/dlib/image_saver/save_png.h
+index cddf03f..3854f21 100644
+--- a/dlib/image_saver/save_png.h
++++ b/dlib/image_saver/save_png.h
+@@ -3,6 +3,10 @@
+ #ifndef DLIB_SAVE_PnG_Hh_
+ #define DLIB_SAVE_PnG_Hh_
+ 
++#ifndef DLIB_PNG_SUPPORT
++#define DLIB_PNG_SUPPORT
++#endif
++
+ #include "save_png_abstract.h"
+ #include "image_saver.h"
+ #include "../array2d.h"
