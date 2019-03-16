@@ -3,6 +3,7 @@ include(vcpkg_common_functions)
 if(VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
     message("dlib only supports static linkage")
     set(VCPKG_LIBRARY_LINKAGE "static")
+    set(BUILD_IMGLAB_LINKAGE  "dynamic")
 endif()
 
 vcpkg_from_github(
@@ -26,6 +27,12 @@ set(WITH_CUDA OFF)
 if("cuda" IN_LIST FEATURES)
   set(WITH_CUDA ON)
 endif()
+
+vcpkg_apply_patches(
+    SOURCE_PATH ${SOURCE_PATH}
+    PATCHES
+        ${CMAKE_CURRENT_LIST_DIR}/extend-image-format.patch
+)
 
 vcpkg_configure_cmake(
     SOURCE_PATH ${SOURCE_PATH}
@@ -76,6 +83,19 @@ string(REPLACE
     "get_filename_component(_IMPORT_PREFIX \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)"
     _contents "${_contents}")
 file(WRITE ${CURRENT_PACKAGES_DIR}/share/dlib/dlib.cmake "${_contents}")
+
+# build imglab
+if(BUILD_IMGLAB_LINKAGE STREQUAL "dynamic")
+    vcpkg_configure_cmake(
+        SOURCE_PATH ${SOURCE_PATH}/tools/imglab
+        PREFER_NINJA 
+    )
+
+    vcpkg_install_cmake()
+    set(VCPKG_LIBRARY_LINKAGE "dynamic")
+#    file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/bin ${CURRENT_PACKAGES_DIR}/debug/bin)
+endif()
+# file(INSTALL ${CURRENT_PACKAGES_DIR}/bin/imglib.exe DESTINATION ${CURRENT_PACKAGES_DIR}/bin)
 
 # Handle copyright
 file(COPY ${SOURCE_PATH}/dlib/LICENSE.txt DESTINATION ${CURRENT_PACKAGES_DIR}/share/dlib)
