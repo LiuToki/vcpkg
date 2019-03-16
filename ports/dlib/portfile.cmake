@@ -3,7 +3,6 @@ include(vcpkg_common_functions)
 if(VCPKG_LIBRARY_LINKAGE STREQUAL "dynamic")
     message("dlib only supports static linkage")
     set(VCPKG_LIBRARY_LINKAGE "static")
-    set(BUILD_IMGLAB_LINKAGE  "dynamic")
 endif()
 
 vcpkg_from_github(
@@ -103,19 +102,6 @@ file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/bin)
 file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/bin)
 file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/lib/pkgconfig)
 file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug/lib/pkgconfig)
-
-# build imglab
-if(BUILD_IMGLAB_LINKAGE STREQUAL "dynamic")
-    vcpkg_configure_cmake(
-        SOURCE_PATH ${SOURCE_PATH}/tools/imglab
-        PREFER_NINJA 
-    )
-
-    vcpkg_install_cmake()
-    set(VCPKG_LIBRARY_LINKAGE "dynamic")
-#    file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/bin ${CURRENT_PACKAGES_DIR}/debug/bin)
-endif()
-# file(INSTALL ${CURRENT_PACKAGES_DIR}/bin/imglib.exe DESTINATION ${CURRENT_PACKAGES_DIR}/bin)
 
 # Handle copyright
 file(COPY ${SOURCE_PATH}/dlib/LICENSE.txt DESTINATION ${CURRENT_PACKAGES_DIR}/share/dlib)
