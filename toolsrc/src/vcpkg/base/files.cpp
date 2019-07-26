@@ -1,27 +1,139 @@
 #include "pch.h"
 
 #include <vcpkg/base/files.h>
+#include <vcpkg/base/system.debug.h>
 #include <vcpkg/base/system.h>
+#include <vcpkg/base/system.print.h>
+#include <vcpkg/base/system.process.h>
 #include <vcpkg/base/util.h>
+#include <vcpkg/base/work_queue.h>
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 #include <fcntl.h>
-#include <sys/sendfile.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+#if defined(__linux__)
+#include <sys/sendfile.h>
+#elif defined(__APPLE__)
+#include <copyfile.h>
+#endif
+
+namespace fs::detail
+{
+    file_status symlink_status_t::operator()(const path& p, std::error_code& ec) const noexcept
+    {
+#if defined(_WIN32)
+        static_cast<void>(ec);
+
+        /*
+            do not find the permissions of the file -- it's unnecessary for the
+            things that vcpkg does.
+            if one were to add support for this in the future, one should look
+            into GetFileSecurityW
+        */
+        perms permissions = perms::unknown;
+
+        WIN32_FILE_ATTRIBUTE_DATA file_attributes;
+        file_type ft = file_type::unknown;
+        if (!GetFileAttributesExW(p.c_str(), GetFileExInfoStandard, &file_attributes))
+        {
+            ft = file_type::not_found;
+        }
+        else if (file_attributes.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+        {
+            // check for reparse point -- if yes, then symlink
+            ft = file_type::symlink;
+        }
+        else if (file_attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            ft = file_type::directory;
+        }
+        else
+        {
+            // otherwise, the file is a regular file
+            ft = file_type::regular;
+        }
+
+        return file_status(ft, permissions);
+
+#else
+        return stdfs::symlink_status(p, ec);
+#endif
+    }
+
+    file_status symlink_status_t::operator()(const path& p, vcpkg::LineInfo li) const noexcept
+    {
+        std::error_code ec;
+        auto result = symlink_status(p, ec);
+        if (ec) vcpkg::Checks::exit_with_message(li, "error getting status of path %s: %s", p.string(), ec.message());
+
+        return result;
+    }
+}
 
 namespace vcpkg::Files
 {
     static const std::regex FILESYSTEM_INVALID_CHARACTERS_REGEX = std::regex(R"([\/:*?"<>|])");
 
-    void Filesystem::write_contents(const fs::path& file_path, const std::string& data)
+    std::string Filesystem::read_contents(const fs::path& path, LineInfo linfo) const
+    {
+        auto maybe_contents = this->read_contents(path);
+        if (auto p = maybe_contents.get())
+            return std::move(*p);
+        else
+            Checks::exit_with_message(
+                linfo, "error reading file: %s: %s", path.u8string(), maybe_contents.error().message());
+    }
+    void Filesystem::write_contents(const fs::path& path, const std::string& data, LineInfo linfo)
     {
         std::error_code ec;
-        write_contents(file_path, data, ec);
-        Checks::check_exit(
-            VCPKG_LINE_INFO, !ec, "error while writing file: %s: %s", file_path.u8string(), ec.message());
+        this->write_contents(path, data, ec);
+        if (ec) Checks::exit_with_message(linfo, "error writing file: %s: %s", path.u8string(), ec.message());
+    }
+    void Filesystem::rename(const fs::path& oldpath, const fs::path& newpath, LineInfo linfo)
+    {
+        std::error_code ec;
+        this->rename(oldpath, newpath, ec);
+        if (ec)
+            Checks::exit_with_message(
+                linfo, "error renaming file: %s: %s: %s", oldpath.u8string(), newpath.u8string(), ec.message());
+    }
+
+    bool Filesystem::remove(const fs::path& path, LineInfo linfo)
+    {
+        std::error_code ec;
+        auto r = this->remove(path, ec);
+        if (ec) Checks::exit_with_message(linfo, "error removing file: %s: %s", path.u8string(), ec.message());
+        return r;
+    }
+
+    void Filesystem::write_lines(const fs::path& path, const std::vector<std::string>& lines, LineInfo linfo)
+    {
+        std::error_code ec;
+        this->write_lines(path, lines, ec);
+        if (ec) Checks::exit_with_message(linfo, "error writing lines: %s: %s", path.u8string(), ec.message());
+    }
+
+    std::uintmax_t Filesystem::remove_all(const fs::path& path, LineInfo li)
+    {
+        std::error_code ec;
+        fs::path failure_point;
+
+        const auto result = this->remove_all(path, ec, failure_point);
+
+        if (ec)
+        {
+            Checks::exit_with_message(li,
+                                      "Failure to remove_all(%s) due to file %s: %s",
+                                      path.string(),
+                                      failure_point.string(),
+                                      ec.message());
+        }
+
+        return result;
     }
 
     struct RealFilesystem final : Filesystem
@@ -48,7 +160,7 @@ namespace vcpkg::Files
             file_stream.read(&output[0], length);
             file_stream.close();
 
-            return std::move(output);
+            return output;
         }
         virtual Expected<std::vector<std::string>> read_lines(const fs::path& file_path) const override
         {
@@ -66,7 +178,7 @@ namespace vcpkg::Files
             }
             file_stream.close();
 
-            return std::move(output);
+            return output;
         }
         virtual fs::path find_file_recursively_up(const fs::path& starting_dir,
                                                   const std::string& filename) const override
@@ -139,23 +251,31 @@ namespace vcpkg::Files
             return ret;
         }
 
-        virtual void write_lines(const fs::path& file_path, const std::vector<std::string>& lines) override
+        virtual void write_lines(const fs::path& file_path,
+                                 const std::vector<std::string>& lines,
+                                 std::error_code& ec) override
         {
             std::fstream output(file_path, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+            if (!output)
+            {
+                ec.assign(errno, std::generic_category());
+                return;
+            }
             for (const std::string& line : lines)
             {
                 output << line << "\n";
+                if (!output)
+                {
+                    output.close();
+                    ec.assign(errno, std::generic_category());
+                    return;
+                }
             }
             output.close();
         }
-
         virtual void rename(const fs::path& oldpath, const fs::path& newpath, std::error_code& ec) override
         {
             fs::stdfs::rename(oldpath, newpath, ec);
-        }
-        virtual void rename(const fs::path& oldpath, const fs::path& newpath) override
-        {
-            fs::stdfs::rename(oldpath, newpath);
         }
         virtual void rename_or_copy(const fs::path& oldpath,
                                     const fs::path& newpath,
@@ -163,7 +283,8 @@ namespace vcpkg::Files
                                     std::error_code& ec) override
         {
             this->rename(oldpath, newpath, ec);
-#if defined(__linux__)
+            Util::unused(temp_suffix);
+#if defined(__linux__) || defined(__APPLE__)
             if (ec)
             {
                 auto dst = newpath;
@@ -179,13 +300,25 @@ namespace vcpkg::Files
                     return;
                 }
 
+#if defined(__linux__)
                 off_t bytes = 0;
                 struct stat info = {0};
                 fstat(i_fd, &info);
                 auto written_bytes = sendfile(o_fd, i_fd, &bytes, info.st_size);
+#elif defined(__APPLE__)
+                auto written_bytes = fcopyfile(i_fd, o_fd, 0, COPYFILE_ALL);
+#endif
+                if (written_bytes == -1)
+                {
+                    ec.assign(errno, std::generic_category());
+                    close(i_fd);
+                    close(o_fd);
+
+                    return;
+                }
+
                 close(i_fd);
                 close(o_fd);
-                if (written_bytes == -1) return;
 
                 this->rename(dst, newpath, ec);
                 if (ec) return;
@@ -193,29 +326,164 @@ namespace vcpkg::Files
             }
 #endif
         }
-        virtual bool remove(const fs::path& path) override { return fs::stdfs::remove(path); }
         virtual bool remove(const fs::path& path, std::error_code& ec) override { return fs::stdfs::remove(path, ec); }
-        virtual std::uintmax_t remove_all(const fs::path& path, std::error_code& ec) override
+        virtual std::uintmax_t remove_all(const fs::path& path, std::error_code& ec, fs::path& failure_point) override
         {
-            // Working around the currently buggy remove_all()
-            std::uintmax_t out = fs::stdfs::remove_all(path, ec);
+            /*
+                does not use the std::filesystem call since it is buggy, and can
+                have spurious errors before VS 2017 update 6, and on later versions
+                (as well as on macOS and Linux), this is just as fast and will have
+                fewer spurious errors due to locks.
+            */
 
-            for (int i = 0; i < 5 && this->exists(path); i++)
+            /*
+                `remove` doesn't actually remove anything -- it simply moves the
+                files into a parent directory (which ends up being at `path`),
+                and then inserts `actually_remove{current_path}` into the work
+                queue.
+            */
+            struct remove
             {
-                using namespace std::chrono_literals;
-                std::this_thread::sleep_for(i * 100ms);
-                out += fs::stdfs::remove_all(path, ec);
+                struct tld
+                {
+                    const fs::path& tmp_directory;
+                    std::uint64_t index;
+
+                    std::atomic<std::uintmax_t>& files_deleted;
+
+                    std::mutex& ec_mutex;
+                    std::error_code& ec;
+                    fs::path& failure_point;
+                };
+
+                struct actually_remove;
+                using queue = WorkQueue<actually_remove, tld>;
+
+                /*
+                    if `current_path` is a directory, first `remove`s all
+                    elements of the directory, then calls remove.
+
+                    else, just calls remove.
+                */
+                struct actually_remove
+                {
+                    fs::path current_path;
+
+                    void operator()(tld& info, const queue& queue) const
+                    {
+                        std::error_code ec;
+                        const auto path_type = fs::symlink_status(current_path, ec).type();
+
+                        if (check_ec(ec, info, queue, current_path)) return;
+
+                        if (path_type == fs::file_type::directory)
+                        {
+                            for (const auto& entry : fs::stdfs::directory_iterator(current_path))
+                            {
+                                remove{}(entry, info, queue);
+                            }
+                        }
+
+                        if (fs::stdfs::remove(current_path, ec))
+                        {
+                            info.files_deleted.fetch_add(1, std::memory_order_relaxed);
+                        }
+                        else
+                        {
+                            check_ec(ec, info, queue, current_path);
+                        }
+                    }
+                };
+
+                static bool check_ec(const std::error_code& ec,
+                                     tld& info,
+                                     const queue& queue,
+                                     const fs::path& failure_point)
+                {
+                    if (ec)
+                    {
+                        queue.terminate();
+
+                        auto lck = std::unique_lock<std::mutex>(info.ec_mutex);
+                        if (!info.ec)
+                        {
+                            info.ec = ec;
+                            info.failure_point = failure_point;
+                        }
+
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                void operator()(const fs::path& current_path, tld& info, const queue& queue) const
+                {
+                    std::error_code ec;
+
+                    const auto tmp_name = Strings::b32_encode(info.index++);
+                    const auto tmp_path = info.tmp_directory / tmp_name;
+
+                    fs::stdfs::rename(current_path, tmp_path, ec);
+                    if (check_ec(ec, info, queue, current_path)) return;
+
+                    queue.enqueue_action(actually_remove{std::move(tmp_path)});
+                }
+            };
+
+            const auto path_type = fs::symlink_status(path, ec).type();
+
+            std::atomic<std::uintmax_t> files_deleted{0};
+
+            if (path_type == fs::file_type::directory)
+            {
+                std::uint64_t index = 0;
+                std::mutex ec_mutex;
+
+                auto const tld_gen = [&] {
+                    index += static_cast<std::uint64_t>(1) << 32;
+                    return remove::tld{path, index, files_deleted, ec_mutex, ec, failure_point};
+                };
+
+                remove::queue queue{4, VCPKG_LINE_INFO, tld_gen};
+
+                // note: we don't actually start the queue running until the
+                // `join()`. This allows us to rename all the top-level files in
+                // peace, so that we don't get collisions.
+                auto main_tld = tld_gen();
+                for (const auto& entry : fs::stdfs::directory_iterator(path))
+                {
+                    remove{}(entry, main_tld, queue);
+                }
+
+                queue.join(VCPKG_LINE_INFO);
             }
 
-            if (this->exists(path))
+            /*
+                we need to do backoff on the removal of the top level directory,
+                since we need to place all moved files into that top level
+                directory, and so we can only delete the directory after all the
+                lower levels have been deleted.
+            */
+            for (int backoff = 0; backoff < 5; ++backoff)
             {
-                System::println(System::Color::warning,
-                                "Some files in %s were unable to be removed. Close any editors operating in this "
-                                "directory and retry.",
-                                path.string());
+                if (backoff)
+                {
+                    using namespace std::chrono_literals;
+                    auto backoff_time = 100ms * backoff;
+                    std::this_thread::sleep_for(backoff_time);
+                }
+
+                if (fs::stdfs::remove(path, ec))
+                {
+                    files_deleted.fetch_add(1, std::memory_order_relaxed);
+                    break;
+                }
             }
 
-            return out;
+            return files_deleted;
         }
         virtual bool exists(const fs::path& path) const override { return fs::stdfs::exists(path); }
         virtual bool is_directory(const fs::path& path) const override { return fs::stdfs::is_directory(path); }
@@ -247,11 +515,11 @@ namespace vcpkg::Files
 
         virtual fs::file_status status(const fs::path& path, std::error_code& ec) const override
         {
-            return fs::stdfs::status(path, ec);
+            return fs::status(path, ec);
         }
         virtual fs::file_status symlink_status(const fs::path& path, std::error_code& ec) const override
         {
-            return fs::stdfs::symlink_status(path, ec);
+            return fs::symlink_status(path, ec);
         }
         virtual void write_contents(const fs::path& file_path, const std::string& data, std::error_code& ec) override
         {
@@ -298,14 +566,14 @@ namespace vcpkg::Files
                     if (Util::find(ret, p) == ret.end() && this->exists(p))
                     {
                         ret.push_back(p);
-                        Debug::println("Found path: %s", p.u8string());
+                        Debug::print("Found path: ", p.u8string(), '\n');
                     }
                 }
             }
 
             return ret;
 #else
-            const std::string cmd = Strings::format("which %s", name);
+            const std::string cmd = Strings::concat("which ", name);
             auto out = System::cmd_execute_and_capture_output(cmd);
             if (out.exit_code != 0)
             {
@@ -330,11 +598,12 @@ namespace vcpkg::Files
 
     void print_paths(const std::vector<fs::path>& paths)
     {
-        System::println();
+        std::string message = "\n";
         for (const fs::path& p : paths)
         {
-            System::println("    %s", p.generic_string());
+            Strings::append(message, "    ", p.generic_string(), '\n');
         }
-        System::println();
+        message.push_back('\n');
+        System::print2(message);
     }
 }
