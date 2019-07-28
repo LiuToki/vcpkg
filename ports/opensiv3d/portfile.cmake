@@ -15,15 +15,12 @@ include(vcpkg_common_functions)
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO Siv3D/OpenSiv3D
-    REF 0014a6e05c43e8c820364ec5c20b46c6694b2b58
-    SHA512 c459cb5dc99ed08fc0b52e02b517ff33c86a44ecad0866ea3d9226b834bb920c928f14fb7fb96ddeb46f93a8f2af54ddcf7e438488c09fcd0af14db34f7a9e09
+    REF e8814b4bb2baf23fcfc300325f700b842cce79b1
+    SHA512 9be3496593e95e8bd931ea38fc559bc38ad2a31371c801e6c5255b049a0444d3a89f59f37c6e90d3f0fcc939eb3086354390b61f25d258e2e87f7df34206acb0
     HEAD_REF master
 )
 
-if (VCPKG_TARGET_ARCHITECTURE MATCHES "x86")
-    set(BUILD_ARCH "Win32")
-    set(OUTPUT_DIR "Windows(x86)")
-elseif (VCPKG_TARGET_ARCHITECTURE MATCHES "x64")
+if (VCPKG_TARGET_ARCHITECTURE MATCHES "x64")
     set(BUILD_ARCH "x64")
     set(OUTPUT_DIR "Windows(x64)")
 else()
@@ -33,25 +30,31 @@ endif()
 # List depending libraries before build
 # file(GLOB_RECURSE LIBS ${SOURCE_PATH}/Siv3D/lib/${OUTPUT_DIR}/*.lib)
 
+# download boost.
+file(DOWNLOAD "https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.zip"
+    ${SOURCE_PATH}/Dependencies/boost_1_70_0.zip
+    STATUS download_status
+    )
+vcpkg_extract_source_archive(${SOURCE_PATH}/Dependencies/boost_1_70_0.zip ${SOURCE_PATH}/Dependencies)
+
 vcpkg_build_msbuild(
-    PROJECT_PATH ${SOURCE_PATH}/MSVC/Siv3D.vcxproj
+    PROJECT_PATH ${SOURCE_PATH}/WindowsDesktop/Siv3D.vcxproj
     PLATFORM ${BUILD_ARCH}
-    OPTIONS /p:ForceImportBeforeCppTargets=${VCPKG_ROOT_DIR}/scripts/buildsystems/msbuild/vcpkg.targets
     OPTIONS_DEBUG /p:OutDir=${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-dbg/
     OPTIONS_RELEASE /p:OutDir=${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-rel/
     OPTIONS /VERBOSITY:Diagnostic /DETAILEDSUMMARY
 )
 
 # Handle headers
-file(COPY ${SOURCE_PATH}/Siv3D/include/Siv3D.hpp DESTINATION ${CURRENT_PACKAGES_DIR}/include)
-file(COPY ${SOURCE_PATH}/Siv3D/include/HamFramework.hpp DESTINATION ${CURRENT_PACKAGES_DIR}/include)
-file(COPY ${SOURCE_PATH}/Siv3D/include/HamFramework DESTINATION ${CURRENT_PACKAGES_DIR}/include)
-file(COPY ${SOURCE_PATH}/Siv3D/include/Siv3D DESTINATION ${CURRENT_PACKAGES_DIR}/include)
-file(COPY ${SOURCE_PATH}/Siv3D/include/ThirdParty DESTINATION ${CURRENT_PACKAGES_DIR}/include)
+file(COPY ${SOURCE_PATH}/Siv3D/include/Siv3D.hpp DESTINATION ${CURRENT_PACKAGES_DIR}/include/opensiv3d)
+file(COPY ${SOURCE_PATH}/Siv3D/include/HamFramework.hpp DESTINATION ${CURRENT_PACKAGES_DIR}/include/opensiv3d)
+file(COPY ${SOURCE_PATH}/Siv3D/include/HamFramework DESTINATION ${CURRENT_PACKAGES_DIR}/include/opensiv3d)
+file(COPY ${SOURCE_PATH}/Siv3D/include/Siv3D DESTINATION ${CURRENT_PACKAGES_DIR}/include/opensiv3d)
+file(COPY ${SOURCE_PATH}/Siv3D/include/ThirdParty DESTINATION ${CURRENT_PACKAGES_DIR}/include/opensiv3d)
 
 # Handle libraries
-set(LIBRARY_OUT_DIRECTORY ${CURRENT_PACKAGES_DIR}/lib/Siv3D)
-set(LIBRARY_DEBUG_OUT_DIRECTORY ${CURRENT_PACKAGES_DIR}/debug/lib/Siv3D)
+set(LIBRARY_OUT_DIRECTORY ${CURRENT_PACKAGES_DIR}/lib/opensiv3d)
+set(LIBRARY_DEBUG_OUT_DIRECTORY ${CURRENT_PACKAGES_DIR}/debug/lib/opensiv3d)
 file(MAKE_DIRECTORY ${LIBRARY_OUT_DIRECTORY})
 file(MAKE_DIRECTORY ${LIBRARY_DEBUG_OUT_DIRECTORY})
 
@@ -68,6 +71,9 @@ file(INSTALL ${SOURCE_PATH}/Siv3D/lib/${OUTPUT_DIR}/ DESTINATION ${LIBRARY_OUT_D
 
 file(INSTALL ${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-rel/Siv3D.lib DESTINATION ${LIBRARY_OUT_DIRECTORY})
 file(INSTALL ${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-dbg/Siv3D_d.lib DESTINATION ${LIBRARY_DEBUG_OUT_DIRECTORY})
+
+# Handle targets
+file(INSTALL ${CURRENT_PORT_DIR}/opensiv3d.targets DESTINATION ${CURRENT_PACKAGES_DIR}/tools/opensiv3d/)
 
 # Handle copyright
 file(INSTALL ${SOURCE_PATH}/LICENSE DESTINATION ${CURRENT_PACKAGES_DIR}/share/opensiv3d RENAME copyright)
