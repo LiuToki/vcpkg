@@ -68,10 +68,10 @@
       <AdditionalLibraryDirectories Condition="'$(Configuration)' == 'Debug'">%(AdditionalLibraryDirectories);$(VcpkgRoot)debug\lib\opensiv3d;$(VcpkgRoot)debug\lib\opensiv3d\manual-link</AdditionalLibraryDirectories>
     </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(VcpkgRoot)include\opensiv3d</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(VcpkgRoot)include\opensiv3d;$(VcpkgRoot)include\opensiv3d\ThirdParty</AdditionalIncludeDirectories>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(VcpkgRoot)include\opensiv3d</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(VcpkgRoot)include\opensiv3d;$(VcpkgRoot)include\opensiv3d\ThirdParty</AdditionalIncludeDirectories>
     </ResourceCompile>
   </ItemDefinitionGroup>
 </Project>
