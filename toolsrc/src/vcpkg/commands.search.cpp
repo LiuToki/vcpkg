@@ -2,14 +2,14 @@
 
 #include <vcpkg/base/system.print.h>
 #include <vcpkg/commands.h>
+#include <vcpkg/dependencies.h>
 #include <vcpkg/globalstate.h>
 #include <vcpkg/help.h>
 #include <vcpkg/paragraphs.h>
 #include <vcpkg/sourceparagraph.h>
 #include <vcpkg/vcpkglib.h>
-#include <vcpkg/dependencies.h>
 
-using vcpkg::Dependencies::PathsPortFileProvider;
+using vcpkg::PortFileProvider::PathsPortFileProvider;
 
 namespace vcpkg::Commands::Search
 {
@@ -54,7 +54,7 @@ namespace vcpkg::Commands::Search
     const CommandStructure COMMAND_STRUCTURE = {
         Strings::format(
             "The argument should be a substring to search for, or no argument to display all libraries.\n%s",
-            Help::create_example_string("search png")),
+            create_example_string("search png")),
         0,
         1,
         {SEARCH_SWITCHES, {}},
@@ -67,9 +67,9 @@ namespace vcpkg::Commands::Search
         const bool full_description = Util::Sets::contains(options.switches, OPTION_FULLDESC);
 
         PathsPortFileProvider provider(paths, args.overlay_ports.get());
-        auto source_paragraphs = Util::fmap(provider.load_all_control_files(), [](auto&& port) -> const SourceControlFile * { 
-            return port->source_control_file.get(); 
-        });
+        auto source_paragraphs =
+            Util::fmap(provider.load_all_control_files(),
+                       [](auto&& port) -> const SourceControlFile* { return port->source_control_file.get(); });
 
         if (args.command_arguments.empty())
         {

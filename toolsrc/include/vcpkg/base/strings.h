@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vcpkg/base/pragmas.h>
+
 #include <vcpkg/base/cstringview.h>
 #include <vcpkg/base/optional.h>
 #include <vcpkg/base/stringliteral.h>
@@ -11,14 +13,24 @@
 namespace vcpkg::Strings::details
 {
     template<class T>
-    auto to_printf_arg(const T& t) -> decltype(t.to_string())
+    auto to_string(const T& t) -> decltype(t.to_string())
     {
         return t.to_string();
+    }
+
+    // first looks up to_string on `T` using ADL; then, if that isn't found,
+    // uses the above definition which returns t.to_string()
+    template<class T, class = std::enable_if_t<!std::is_arithmetic<T>::value>>
+    auto to_printf_arg(const T& t) -> decltype(to_string(t))
+    {
+        return to_string(t);
     }
 
     inline const char* to_printf_arg(const std::string& s) { return s.c_str(); }
 
     inline const char* to_printf_arg(const char* s) { return s; }
+
+    inline const wchar_t* to_printf_arg(const wchar_t* s) { return s; }
 
     template<class T, class = std::enable_if_t<std::is_arithmetic<T>::value>>
     T to_printf_arg(T s)
@@ -161,9 +173,7 @@ namespace vcpkg::Strings
 
     void trim_all_and_remove_whitespace_strings(std::vector<std::string>* strings);
 
-    std::vector<std::string> split(const std::string& s, const std::string& delimiter);
-
-    std::vector<std::string> split(const std::string& s, const std::string& delimiter, size_t max_count);
+    std::vector<std::string> split(const std::string& s, const char delimiter);
 
     std::vector<StringView> find_all_enclosed(StringView input, StringView left_delim, StringView right_delim);
 
@@ -185,8 +195,6 @@ namespace vcpkg::Strings
 
     bool contains(StringView haystack, StringView needle);
 
-    // base 32 encoding, since base64 encoding requires lowercase letters,
-    // which are not distinct from uppercase letters on macOS or Windows filesystems.
-    // follows RFC 4648
+    // base 32 encoding, following IETC RFC 4648
     std::string b32_encode(std::uint64_t x) noexcept;
 }

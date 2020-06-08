@@ -12,27 +12,30 @@
 
 namespace vcpkg::Commands
 {
-    using CommandTypeA = void (*)(const VcpkgCmdArguments& args,
-                                  const VcpkgPaths& paths,
-                                  const Triplet& default_triplet);
+    using CommandTypeA = void (*)(const VcpkgCmdArguments& args, const VcpkgPaths& paths, Triplet default_triplet);
     using CommandTypeB = void (*)(const VcpkgCmdArguments& args, const VcpkgPaths& paths);
-    using CommandTypeC = void (*)(const VcpkgCmdArguments& args);
+    using CommandTypeC = void (*)(const VcpkgCmdArguments& args, Files::Filesystem& fs);
 
     namespace BuildExternal
     {
-        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, const Triplet& default_triplet);
+        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, Triplet default_triplet);
     }
 
     namespace CI
     {
         extern const CommandStructure COMMAND_STRUCTURE;
-        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, const Triplet& default_triplet);
+        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, Triplet default_triplet);
+    }
+
+    namespace CIClean
+    {
+        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths);
     }
 
     namespace Env
     {
         extern const CommandStructure COMMAND_STRUCTURE;
-        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, const Triplet& default_triplet);
+        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, Triplet default_triplet);
     }
 
     namespace Create
@@ -44,7 +47,7 @@ namespace vcpkg::Commands
     namespace Upgrade
     {
         extern const CommandStructure COMMAND_STRUCTURE;
-        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, const Triplet& default_triplet);
+        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, Triplet default_triplet);
     }
 
     namespace Edit
@@ -56,7 +59,7 @@ namespace vcpkg::Commands
     namespace DependInfo
     {
         extern const CommandStructure COMMAND_STRUCTURE;
-        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths);
+        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, Triplet default_triplet);
     }
 
     namespace Search
@@ -89,13 +92,19 @@ namespace vcpkg::Commands
 
     namespace Integrate
     {
-        extern const char* const INTEGRATE_COMMAND_HELPSTRING;
         extern const CommandStructure COMMAND_STRUCTURE;
 
         void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths);
+        void append_helpstring(HelpTableFormatter& table);
+        std::string get_helpstring();
     }
 
     namespace PortsDiff
+    {
+        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths);
+    }
+
+    namespace PortHistory
     {
         void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths);
     }
@@ -110,14 +119,14 @@ namespace vcpkg::Commands
         const char* base_version();
         const std::string& version();
         void warn_if_vcpkg_version_mismatch(const VcpkgPaths& paths);
-        void perform_and_exit(const VcpkgCmdArguments& args);
+        void perform_and_exit(const VcpkgCmdArguments& args, Files::Filesystem& fs);
     }
 
     namespace Contact
     {
         extern const CommandStructure COMMAND_STRUCTURE;
         const std::string& email();
-        void perform_and_exit(const VcpkgCmdArguments& args);
+        void perform_and_exit(const VcpkgCmdArguments& args, Files::Filesystem& fs);
     }
 
     namespace X_VSInstances
@@ -134,6 +143,12 @@ namespace vcpkg::Commands
     namespace Fetch
     {
         void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths);
+    }
+
+    namespace SetInstalled
+    {
+        extern const CommandStructure COMMAND_STRUCTURE;
+        void perform_and_exit(const VcpkgCmdArguments& args, const VcpkgPaths& paths, Triplet default_triplet);
     }
 
     template<class T>

@@ -1,4 +1,4 @@
-#include <vcpkg-test/catch.h>
+#include <catch2/catch.hpp>
 
 #include <vcpkg/vcpkgcmdarguments.h>
 
@@ -13,7 +13,7 @@ TEST_CASE ("VcpkgCmdArguments from lowercase argument sequence", "[arguments]")
 {
     std::vector<std::string> t = {"--vcpkg-root",
                                   "C:\\vcpkg",
-                                  "--scripts-root=C:\\scripts",
+                                  "--x-scripts-root=C:\\scripts",
                                   "--debug",
                                   "--sendmetrics",
                                   "--printmetrics",
@@ -27,10 +27,10 @@ TEST_CASE ("VcpkgCmdArguments from lowercase argument sequence", "[arguments]")
     REQUIRE(*v.scripts_root_dir == "C:\\scripts");
     REQUIRE(v.debug);
     REQUIRE(*v.debug.get());
-    REQUIRE(v.sendmetrics);
-    REQUIRE(*v.sendmetrics.get());
-    REQUIRE(v.printmetrics);
-    REQUIRE(*v.printmetrics.get());
+    REQUIRE(v.send_metrics);
+    REQUIRE(*v.send_metrics.get());
+    REQUIRE(v.print_metrics);
+    REQUIRE(*v.print_metrics.get());
 
     REQUIRE(v.overlay_ports->size() == 2);
     REQUIRE(v.overlay_ports->at(0) == "C:\\ports1");
@@ -45,7 +45,7 @@ TEST_CASE ("VcpkgCmdArguments from uppercase argument sequence", "[arguments]")
 {
     std::vector<std::string> t = {"--VCPKG-ROOT",
                                   "C:\\vcpkg",
-                                  "--SCRIPTS-ROOT=C:\\scripts",
+                                  "--X-SCRIPTS-ROOT=C:\\scripts",
                                   "--DEBUG",
                                   "--SENDMETRICS",
                                   "--PRINTMETRICS",
@@ -59,10 +59,10 @@ TEST_CASE ("VcpkgCmdArguments from uppercase argument sequence", "[arguments]")
     REQUIRE(*v.scripts_root_dir == "C:\\scripts");
     REQUIRE(v.debug);
     REQUIRE(*v.debug.get());
-    REQUIRE(v.sendmetrics);
-    REQUIRE(*v.sendmetrics.get());
-    REQUIRE(v.printmetrics);
-    REQUIRE(*v.printmetrics.get());
+    REQUIRE(v.send_metrics);
+    REQUIRE(*v.send_metrics.get());
+    REQUIRE(v.print_metrics);
+    REQUIRE(*v.print_metrics.get());
 
     REQUIRE(v.overlay_ports->size() == 2);
     REQUIRE(v.overlay_ports->at(0) == "C:\\ports1");

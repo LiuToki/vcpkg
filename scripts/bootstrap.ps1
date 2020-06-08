@@ -226,8 +226,9 @@ function getWindowsSDK( [Parameter(Mandatory=$False)][switch]$DisableWin10SDK = 
         $win10sdkVersions = @(Get-ChildItem $folder | Where-Object {$_.Name -match "^10"} | Sort-Object)
         [array]::Reverse($win10sdkVersions) # Newest SDK first
 
-        foreach ($win10sdkV in $win10sdkVersions)
+        foreach ($win10sdk in $win10sdkVersions)
         {
+            $win10sdkV = $win10sdk.Name
             $windowsheader = "$folder\$win10sdkV\um\windows.h"
             if (!(Test-Path $windowsheader))
             {
@@ -340,7 +341,7 @@ if ($disableMetrics)
 $platform = "x86"
 $vcpkgReleaseDir = "$vcpkgSourcesPath\msbuild.x86.release"
 if($PSVersionTable.PSVersion.Major -le 2)
-{ 
+{
     $architecture=(Get-WmiObject win32_operatingsystem | Select-Object osarchitecture).osarchitecture
 }
 else
@@ -411,8 +412,28 @@ if ($ec -ne 0)
 }
 Write-Host "`nBuilding vcpkg.exe... done.`n"
 
+if (-not $disableMetrics)
+{
+    Write-Host @"
+Telemetry
+---------
+vcpkg collects usage data in order to help us improve your experience.
+The data collected by Microsoft is anonymous.
+You can opt-out of telemetry by re-running the bootstrap-vcpkg script with -disableMetrics,
+passing --disable-metrics to vcpkg on the command line,
+or by setting the VCPKG_DISABLE_METRICS environment variable.
+
+Read more about vcpkg telemetry at docs/about/privacy.md
+"@
+}
+
 Write-Verbose "Placing vcpkg.exe in the correct location"
 
 Copy-Item "$vcpkgReleaseDir\vcpkg.exe" "$vcpkgRootDir\vcpkg.exe"
-Copy-Item "$vcpkgReleaseDir\vcpkgmetricsuploader.exe" "$vcpkgRootDir\scripts\vcpkgmetricsuploader.exe"
+
+if (-not $disableMetrics)
+{
+    Copy-Item "$vcpkgReleaseDir\vcpkgmetricsuploader.exe" "$vcpkgRootDir\scripts\vcpkgmetricsuploader.exe"
+}
+
 Remove-Item "$vcpkgReleaseDir" -Force -Recurse -ErrorAction SilentlyContinue

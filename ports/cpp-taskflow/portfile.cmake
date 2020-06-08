@@ -1,12 +1,9 @@
 # header-only library
-
-include(vcpkg_common_functions)
-
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
-    REPO cpp-taskflow/cpp-taskflow
-    REF 97252f7d782c6e896122645175c08131ce10e649
-    SHA512 df8ae9ea449663cb548f3c37346c2e0c785add2d86b9c618aea2741d81fe88c34b0d3d0e610a4b571973f9bc18631becedfe28e029ecf0c0cc87e4c35a280a29
+    REPO taskflow/taskflow
+    REF v2.2.0
+    SHA512 1aa4e9d7324f56eb33cd4986d721035f0abf12e022da956bafc0b16cf6cb82d152334ae58edc4581ab2f6d44989ca21cdd590ad560d6f1a4f905710fe08d0091
     HEAD_REF master
 )
 
@@ -26,4 +23,4 @@ vcpkg_fixup_cmake_targets(CONFIG_PATH lib/cmake)
 file(REMOVE_RECURSE ${CURRENT_PACKAGES_DIR}/debug ${CURRENT_PACKAGES_DIR}/lib)
 
 # Handle copyright
-configure_file(${SOURCE_PATH}/LICENSE ${CURRENT_PACKAGES_DIR}/share/cpp-taskflow/copyright COPYONLY)
+configure_file(${SOURCE_PATH}/LICENSE ${CURRENT_PACKAGES_DIR}/share/${PORT}/copyright COPYONLY)
