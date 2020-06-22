@@ -221,6 +221,37 @@ if("ffmpeg" IN_LIST FEATURES)
   endif()
 endif()
 
+set(TESSERACT_OPTIONS)
+if("tesseract" IN_LIST FEATURES)
+  list(APPEND TESSERACT_OPTIONS
+    -DTesseract_INCLUDE_DIR=${CURRENT_INSTALLED_DIR}/include
+    -DTesseract_LIBRARY=${CURRENT_INSTALLED_DIR}/lib
+    -DLept_LIBRARY=${CURRENT_INSTALLED_DIR}/lib
+  )
+
+  set(TESSERACT_INCLUDE_DIRECTORIES ${CURRENT_INSTALLED_DIR}/include)
+
+  # search libraries
+  file(GLOB TESSERACT_LIBDFILE_PATH ${CURRENT_INSTALLED_DIR}/debug/lib/tesseract*.lib)
+  file(GLOB LEPTONICA_LIBDFILE_PATH ${CURRENT_INSTALLED_DIR}/debug/lib/leptonica*.lib)
+  file(GLOB TESSERACT_LIBFILE_PATH ${CURRENT_INSTALLED_DIR}/lib/tesseract*.lib)
+  file(GLOB LEPTONICA_LIBFILE_PATH ${CURRENT_INSTALLED_DIR}/lib/leptonica*.lib)
+  #set(TESSERACT_LIB_DIRECTORIES ${CURRENT_INSTALLED_DIR}/lib)
+  #set(TESSERACT_BIN_DIRECTORIES ${CURRENT_INSTALLED_DIR}/bin)
+
+  message(${TESSERACT_LIBFILE_PATH})
+  message(${LEPTONICA_LIBFILE_PATH})
+
+  # remove if CMakeLists.txt in contrib text modules
+  set(TESSERACT_CMAKELIST_PATH "${CONTRIB_SOURCE_PATH}/modules/text/CMakeLists.txt")
+  if(EXISTS ${TESSERACT_CMAKELIST_PATH})
+    file(REMOVE ${TESSERACT_CMAKELIST_PATH})
+  endif()
+
+  # create New CMakeLists.txt for tesseract
+  configure_file(${CMAKE_CURRENT_LIST_DIR}/CMakeLists_Tesseract_Template.txt.in ${TESSERACT_CMAKELIST_PATH} @ONLY)
+endif()
+
 if("qt" IN_LIST FEATURES)
   list(APPEND ADDITIONAL_BUILD_FLAGS "-DCMAKE_AUTOMOC=ON")
 endif()
@@ -292,6 +323,8 @@ vcpkg_configure_cmake(
         -DWITH_OPENCLAMDBLAS=OFF
         -DWITH_TBB=${WITH_TBB}
         -DWITH_VTK=${WITH_VTK}
+        # TESSERACT
+        ${TESSERACT_OPTIONS}
         ###### WITH PROPERTIES explicitly disabled, they have problems with libraries if already installed by user and that are "involuntarily" found during install
         -DWITH_LAPACK=OFF
         ###### BUILD_options (mainly modules which require additional libraries)

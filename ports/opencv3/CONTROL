@@ -74,6 +74,10 @@ Feature: tbb
 Build-Depends: tbb
 Description: Enable Intel Threading Building Blocks
 
+Feature: tesseract
+Build-Depends: tesseract
+Description: Tesseract-ocr support for OpenCV
+
 Feature: tiff
 Build-Depends: tiff
 Description: TIFF support for opencv
